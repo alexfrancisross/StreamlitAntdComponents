@@ -53,6 +53,18 @@ const AntdTree = (props: TreeProp) => {
 
     //state
     const [value, setValue] = useState(dsk)
+    const [expandedKeys, setExpandedKeys] = useState<React.Key[]>(dok || [])
+
+    // Sync expandedKeys when open_index prop changes (e.g., after loading children)
+    useEffect(() => {
+        if (openIndex && openIndex.length > 0) {
+            setExpandedKeys(prev => {
+                // Merge: keep existing expanded keys and add new ones from openIndex
+                const merged = new Set([...prev, ...openIndex]);
+                return Array.from(merged);
+            });
+        }
+    }, [JSON.stringify(openIndex)]);
 
     // component height
     useEffect(() => Streamlit.setFrameHeight())
@@ -74,20 +86,29 @@ const AntdTree = (props: TreeProp) => {
     `
     insertStyle(`sac.tree.style`, textStyle)
 
+    // Helper to send component value with expanded keys
+    const sendValue = (selected: any[], expanded: React.Key[]) => {
+        const selectedMapped = selected.map((x: any) => return_index ? x : kv[x]);
+        const expandedMapped = expanded.map((x: any) => return_index ? x : kv[x]);
+        Streamlit.setComponentValue({
+            selected: checkable ? selectedMapped : (selectedMapped.length > 0 ? selectedMapped[0] : null),
+            expanded: expandedMapped
+        });
+    };
+
     //callback
-    const onExpand: TreeProps['onExpand'] = (e) => {
-        Streamlit.setComponentValue(value.map((x: any) => return_index ? x : kv[x]));
+    const onExpand: TreeProps['onExpand'] = (expandedKeys_, info) => {
+        setExpandedKeys(expandedKeys_);
+        sendValue(value as any[], expandedKeys_);
     };
     const onSelect: TreeProps['onSelect'] = (selectedKeys_, info) => {
         setValue(selectedKeys_)
-        Streamlit.setComponentValue(checkable ?
-            selectedKeys_.map((x: any) => return_index ? x : kv[x]) :
-            return_index ? selectedKeys_[0] : kv[selectedKeys_[0]]);
+        sendValue(selectedKeys_ as any[], expandedKeys);
     };
     const onCheck: TreeProps['onCheck'] = (checkedKeys_, info) => {
         let ck = (Array.isArray(checkedKeys_)) ? checkedKeys_ : checkedKeys_['checked']
         setValue(ck)
-        Streamlit.setComponentValue(ck.map((x: any) => return_index ? x : kv[x]))
+        sendValue(ck as any[], expandedKeys);
     }
 
     return (
@@ -122,9 +143,9 @@ const AntdTree = (props: TreeProp) => {
                         onExpand={onExpand}
                         selectedKeys={value}
                         checkedKeys={value}
+                        expandedKeys={expandedKeys}
                         defaultSelectedKeys={dsk}
                         defaultCheckedKeys={dsk}
-                        defaultExpandedKeys={dok}
                         treeData={items}
                         showLine={showLine}
                         checkable={checkable}

@@ -28,6 +28,11 @@ else:
 
 def convert_session_value(id, value, kv: dict, return_index: bool):
     if value is not None:
+        # Handle new TreeResult dict format {'selected': ..., 'expanded': ...}
+        if isinstance(value, dict) and 'selected' in value and 'expanded' in value:
+            # For tree component with expanded keys - pass through as-is
+            return value
+
         list_value = value if isinstance(value, list) else [value]
         if len(list_value) == 0:
             return

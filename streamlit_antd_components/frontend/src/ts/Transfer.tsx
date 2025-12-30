@@ -58,8 +58,8 @@ const AntdTransfer = (props: TransferProp) => {
     const [targetKeys, setTargetKeys] = useState(index);
 
     //callback
-    const onChange = (nextTargetKeys: string[], direction: TransferDirection, moveKeys: string[]) => {
-        setTargetKeys(nextTargetKeys);
+    const onChange = (nextTargetKeys: React.Key[], direction: TransferDirection, moveKeys: React.Key[]) => {
+        setTargetKeys(nextTargetKeys as string[]);
         Streamlit.setComponentValue(nextTargetKeys.map((x) => return_index ? Number(x) : kv[Number(x)]));
     };
     const onSearch = (dir: TransferDirection, value: string) => {

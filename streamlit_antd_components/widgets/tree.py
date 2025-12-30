@@ -7,9 +7,18 @@
 @File     : tree.py
 @Project  : StreamlitAntdComponents
 @Software : PyCharm
+
+Modified to return expanded keys along with selected items.
 """
 
 from ..utils import *
+from typing import NamedTuple, Optional
+
+
+class TreeResult(NamedTuple):
+    """Result from tree component containing selected and expanded items."""
+    selected: List[Union[str, int]]
+    expanded: List[Union[str, int]]
 
 
 def tree(
@@ -34,7 +43,7 @@ def tree(
         args: Tuple[Any, ...] = None,
         kwargs: Dict[str, Any] = None,
         key=None
-) -> List[Union[str, int]]:
+) -> TreeResult:
     """antd design tree  https://ant.design/components/tree
 
     :param items: tree data
@@ -58,7 +67,7 @@ def tree(
     :param args: callback args
     :param kwargs: callback kwargs
     :param key: component unique identifier
-    :return: list of selected item label or index
+    :return: TreeResult with selected items and expanded items
     """
     if isinstance(index, list) and len(index) > 1 and not checkbox:
         raise ValueError(f'length of index ({len(index)}) should =1  when checkbox=False')
@@ -78,4 +87,21 @@ def tree(
     # component default
     default = get_default(index, return_index, kv)
     # pass component id and params to frontend
-    return component(id=get_func_name(), kw=kw, default=default, key=key)
+    result = component(id=get_func_name(), kw=kw, default=default, key=key)
+
+    # Handle the new return format {selected: ..., expanded: [...]}
+    if isinstance(result, dict) and 'selected' in result and 'expanded' in result:
+        selected = result['selected']
+        expanded = result['expanded']
+        # Ensure selected is a list for checkbox mode
+        if checkbox and not isinstance(selected, list):
+            selected = [selected] if selected is not None else []
+        elif not checkbox and isinstance(selected, list):
+            selected = selected[0] if selected else None
+        return TreeResult(selected=selected, expanded=expanded or [])
+
+    # Fallback for backward compatibility (if component returns old format)
+    if checkbox:
+        return TreeResult(selected=result if isinstance(result, list) else [], expanded=[])
+    else:
+        return TreeResult(selected=result, expanded=[])
